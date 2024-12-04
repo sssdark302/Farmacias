@@ -19,15 +19,22 @@ class MapaFarmaciaActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mapa_farmacia)
 
-        // Inicializa el MapView y configura el callback
-        mapView = findViewById(R.id.mapView)
-        mapView.onCreate(savedInstanceState)
-        mapView.getMapAsync(this)
+        val nombre = intent.getStringExtra("nombre") ?: "Nombre no disponible"
+        val telefono = intent.getStringExtra("telefono") ?: "Teléfono no disponible"
+        val latitud = intent.getDoubleExtra("latitud", 0.0)
+        val longitud = intent.getDoubleExtra("longitud", 0.0)
 
-        // Obtiene los datos de la farmacia desde el intent
-        farmacia = intent.getParcelableExtra("farmacia")
-            ?: throw IllegalArgumentException("No se pudo cargar la farmacia seleccionada")
+        val ubicacionFarmacia = LatLng(latitud, longitud)
+
+        // Configura el mapa con la ubicación
+        val mapView: MapView = findViewById(R.id.mapView)
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync { googleMap ->
+            googleMap.addMarker(MarkerOptions().position(ubicacionFarmacia).title(nombre))
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacionFarmacia, 15f))
+        }
     }
+
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
