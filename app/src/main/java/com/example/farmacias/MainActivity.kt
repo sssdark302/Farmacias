@@ -9,8 +9,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // Inicia directamente la actividad de lista de farmacias
         val intent = Intent(this, ListaFarmaciasActivity::class.java)
         startActivity(intent)
         finish()

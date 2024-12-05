@@ -6,48 +6,65 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.database.*
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class ListaFarmaciasActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var database: DatabaseReference
     private val listaFarmacias = mutableListOf<Farmacia>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lista_farmacias)
 
-        // Inicializa RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
+
         val adapter = FarmaciaAdapter(listaFarmacias) { farmacia ->
-            val intent = Intent(this, MapaFarmaciaActivity::class.java)
+            val intent = Intent(this, DetallesFarmaciaActivity::class.java)
             intent.putExtra("nombre", farmacia.nombre)
             intent.putExtra("telefono", farmacia.telefono)
             intent.putExtra("latitud", farmacia.latitud)
             intent.putExtra("longitud", farmacia.longitud)
             startActivity(intent)
         }
-
         recyclerView.adapter = adapter
 
-        // Inicializa Firebase Database
-        database = FirebaseDatabase.getInstance().reference.child("farmacias")
+        try {
+            // Lee el archivo JSON y carga las farmacias
+            val farmacias = leerFarmaciasDesdeJSON(R.raw.farmacias_equipamiento)
+            listaFarmacias.addAll(farmacias)
+            adapter.notifyDataSetChanged()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al leer las farmacias: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun leerFarmaciasDesdeJSON(resourceId: Int): List<Farmacia> {
+        val inputStream = resources.openRawResource(resourceId)
+        val bufferedReader = BufferedReader(InputStreamReader(inputStream))
+        val jsonString = bufferedReader.use { it.readText() }
+        val listaFarmacias = mutableListOf<Farmacia>()
 
-        // Obtiene los datos de Firebase
-        database.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                listaFarmacias.clear()
-                for (data in snapshot.children) {
-                    data.getValue(Farmacia::class.java)?.let { listaFarmacias.add(it) }
-                }
-                adapter.notifyDataSetChanged()
-            }
+        val jsonObject = JSONObject(jsonString)
+        val features = jsonObject.getJSONArray("features")
 
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@ListaFarmaciasActivity, "Error cargando datos", Toast.LENGTH_SHORT).show()
-            }
-        })
+        for (i in 0 until features.length()) {
+            val feature = features.getJSONObject(i)
+            val geometry = feature.getJSONObject("geometry")
+            val coordinates = geometry.getJSONArray("coordinates")
+            val properties = feature.getJSONObject("properties")
+
+            val farmacia = Farmacia(
+                nombre = properties.getString("title"),
+                telefono = properties.optString("description").split("Teléfono: ").getOrNull(1)?.split(" ")?.get(0) ?: "No disponible",
+                latitud = coordinates.getDouble(1),
+                longitud = coordinates.getDouble(0)
+            )
+            listaFarmacias.add(farmacia)
+        }
+
+        return listaFarmacias
     }
 }
