@@ -93,3 +93,9 @@ Está diseñada para cargar los datos de farmacias desde un archivo JSON incluid
 4. **Regresar:**
     - El usuario puede regresar a la lista principal desde cualquier actividad.
 
+## Firebase Realtime Database
+
+- Se intentó implementar la sincronización de datos con Firebase Realtime Database, pero no se completó la integración.
+- Solo pude conectar la aplicación a Firebase y configurar la base de datos, pero no puedo hacer que se guarden mediante los metodos implementados.
+
+
