@@ -30,6 +30,21 @@ class FirebaseHandler {
         })
     }
 
+    fun guardarFarmacias(farmacias: List<Farmacia>, onComplete: (Boolean) -> Unit) {
+        val farmaciaMap = farmacias.associateBy { it.nombre } // Usa 'nombre' como key única
+        println("Datos a guardar en Firebase: $farmaciaMap") // Agrega este log para verificar los datos
+        farmaciaRef.setValue(farmaciaMap).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                println("Farmacias guardadas exitosamente.")
+            } else {
+                println("Error al guardar farmacias: ${task.exception?.message}")
+            }
+            onComplete(task.isSuccessful)
+        }
+    }
+
+
+
     // Obtener usuario autenticado
     fun obtenerUsuarioActual(): FirebaseUser? {
         return auth.currentUser

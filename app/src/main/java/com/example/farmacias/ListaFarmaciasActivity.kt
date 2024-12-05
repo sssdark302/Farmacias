@@ -6,6 +6,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -33,14 +37,42 @@ class ListaFarmaciasActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         try {
-            // Lee el archivo JSON y carga las farmacias
             val farmacias = leerFarmaciasDesdeJSON(R.raw.farmacias_equipamiento)
+            println("Farmacias leídas del JSON: $farmacias") // Inspección
             listaFarmacias.addAll(farmacias)
             adapter.notifyDataSetChanged()
+
+            // Guardar en Firebase
+            val firebaseHandler = FirebaseHandler()
+            firebaseHandler.guardarFarmacias(farmacias) { success ->
+                if (success) {
+                    Toast.makeText(this, "Farmacias guardadas exitosamente.", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Error al guardar las farmacias en Firebase.", Toast.LENGTH_SHORT).show()
+                }
+            }
         } catch (e: Exception) {
             Toast.makeText(this, "Error al leer las farmacias: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+
+        FirebaseDatabase.getInstance().reference.child(".info/connected")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val connected = snapshot.getValue(Boolean::class.java) ?: false
+                    if (connected) {
+                        println("Conexión a Firebase exitosa.")
+                    } else {
+                        println("No hay conexión a Firebase.")
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    println("Error al verificar la conexión: ${error.message}")
+                }
+            })
+
     }
+
     private fun leerFarmaciasDesdeJSON(resourceId: Int): List<Farmacia> {
         val inputStream = resources.openRawResource(resourceId)
         val bufferedReader = BufferedReader(InputStreamReader(inputStream))
